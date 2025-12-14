@@ -43,7 +43,7 @@ class FilterConfig:
         self._image_alpha = None
 
     def load_image(self) -> bool:
-        """Load the filter image with alpha channel."""
+        """Load the filter image with alpha channel, removing white backgrounds."""
         try:
             img = cv2.imread(self.image_path, cv2.IMREAD_UNCHANGED)
             if img is None:
@@ -51,16 +51,49 @@ class FilterConfig:
                 return False
 
             # Handle different image formats
-            if img.shape[2] == 4:
+            if len(img.shape) == 2:
+                # Grayscale image - convert to BGR
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+                alpha = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+            elif img.shape[2] == 4:
                 # Has alpha channel
-                self._image = img[:, :, :3]  # BGR
-                self._image_alpha = img[:, :, 3]  # Alpha
+                alpha = img[:, :, 3]
+                img = img[:, :, :3]
             else:
-                # No alpha channel, create one
-                self._image = img
-                self._image_alpha = (
-                    np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
-                )
+                # No alpha channel - create one based on white background removal
+                alpha = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+
+            # Auto-remove white/near-white background (make it transparent)
+            # This helps with generated images that have white backgrounds
+            # Convert to grayscale for threshold detection
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+            # Find white/very light pixels (threshold 240-255)
+            white_mask = gray > 240
+
+            # Also check if they're actually white (not just bright colors)
+            # Check if R, G, B are all similar (grayscale-ish) and high
+            b, g, r = cv2.split(img)
+            color_diff = np.maximum(
+                np.maximum(
+                    np.abs(r.astype(int) - g.astype(int)),
+                    np.abs(g.astype(int) - b.astype(int)),
+                ),
+                np.abs(r.astype(int) - b.astype(int)),
+            )
+            is_grayish = color_diff < 30  # Tolerance for color similarity
+
+            # Combine: white AND grayish = background
+            background_mask = white_mask & is_grayish
+
+            # Set alpha to 0 where background is detected
+            alpha[background_mask] = 0
+
+            # Optional: smooth the alpha edges a bit
+            alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
+
+            self._image = img
+            self._image_alpha = alpha
 
             return True
         except Exception as e:
@@ -97,35 +130,21 @@ class FilterManager:
                 "name": "Mustache",
                 "image": "mustache.png",
                 "anchor": "nose",
-                "scale_factor": 0.6,
-                "offset_y": 20,  # Below nose
+                "scale_factor": 0.5,
+                "offset_y": 25,  # Below nose
             },
             {
                 "name": "Glasses",
                 "image": "glasses.png",
                 "anchor": "eyes_center",
-                "scale_factor": 1.2,
-                "offset_y": -10,  # Slightly above eye center
-            },
-            {
-                "name": "Cat Ears",
-                "image": "cat_ears.png",
-                "anchor": "forehead",
-                "scale_factor": 0.8,
-                "offset_y": -80,  # Above forehead
-            },
-            {
-                "name": "Unicorn Horn",
-                "image": "unicorn.png",
-                "anchor": "forehead",
-                "scale_factor": 0.5,
-                "offset_y": -100,  # Above forehead
+                "scale_factor": 1.0,
+                "offset_y": 0,  # On eye level
             },
             {
                 "name": "Clown Nose",
                 "image": "clown_nose.png",
                 "anchor": "nose",
-                "scale_factor": 0.3,
+                "scale_factor": 0.25,
                 "offset_y": 0,  # On nose tip
             },
         ]
