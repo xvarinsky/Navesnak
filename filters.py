@@ -152,7 +152,7 @@ class FilterManager:
                 "image": "unicorn.png",
                 "anchor": "forehead",
                 "scale_factor": 1.4,
-                "offset_y": -40,  # Centered on forehead
+                "offset_y": -80,  # Bottom of horn at forehead center
             },
         ]
 
