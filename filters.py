@@ -144,14 +144,14 @@ class FilterManager:
                 "name": "Clown Nose",
                 "image": "clown_nose.png",
                 "anchor": "nose",
-                "scale_factor": 0.25,
+                "scale_factor": 0.5,
                 "offset_y": 0,  # On nose tip
             },
             {
                 "name": "Unicorn Horn",
                 "image": "unicorn.png",
                 "anchor": "forehead",
-                "scale_factor": 0.4,
+                "scale_factor": 0.7,
                 "offset_y": -60,  # Above forehead
             },
         ]
