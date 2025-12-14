@@ -17,7 +17,6 @@ import sys
 import numpy as np
 from face_detector import FaceMeshReplacement
 from filters import FilterManager, overlay_filter
-from audio_manager import AudioManager
 
 
 class MagicMirrorApp:
@@ -35,7 +34,6 @@ class MagicMirrorApp:
         self.fullscreen = fullscreen
         self.cap = None
         self.filter_manager = None
-        self.audio_manager = AudioManager()
 
         # Initialize OpenCV DNN Face Detection (ARM64 compatible)
         self.face_mesh = FaceMeshReplacement(min_detection_confidence=0.5)
@@ -261,15 +259,15 @@ class MagicMirrorApp:
                 elif key == ord(" "):  # SPACE
                     if self.filter_manager:
                         self.filter_manager.next_filter()
-                        filter_name = self.filter_manager.get_current_filter_name()
-                        print(f"Filter: {filter_name}")
-                        self.audio_manager.play_for_filter(filter_name)
+                        print(
+                            f"Filter: {self.filter_manager.get_current_filter_name()}"
+                        )
                 elif key == ord("b") or key == ord("B"):  # B
                     if self.filter_manager:
                         self.filter_manager.previous_filter()
-                        filter_name = self.filter_manager.get_current_filter_name()
-                        print(f"Filter: {filter_name}")
-                        self.audio_manager.play_for_filter(filter_name)
+                        print(
+                            f"Filter: {self.filter_manager.get_current_filter_name()}"
+                        )
 
         except KeyboardInterrupt:
             print("\nInterrupted by user")
@@ -284,8 +282,6 @@ class MagicMirrorApp:
     def cleanup(self):
         """Clean up resources."""
         print("Cleaning up...")
-        if self.audio_manager:
-            self.audio_manager.cleanup()
         if self.cap:
             self.cap.release()
         cv2.destroyAllWindows()

@@ -152,7 +152,7 @@ class FilterManager:
                 "image": "unicorn.png",
                 "anchor": "forehead",
                 "scale_factor": 1.4,
-                "offset_y": -60,  # Above forehead
+                "offset_y": -120,  # Above forehead
             },
         ]
 
