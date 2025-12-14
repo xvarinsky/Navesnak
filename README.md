@@ -5,181 +5,164 @@ A fun, interactive Raspberry Pi application that uses a camera to show a live mi
 ## Features
 
 - **Live Video Mirror**: Real-time mirrored video feed from camera
-- **Face Detection**: Automatic face detection using MediaPipe Face Mesh
+- **Face Detection**: OpenCV DNN-based face detection (ARM64 compatible)
+- **Facial Landmarks**: 68-point facial landmark detection for precise filter positioning
 - **Multiple Filters**: Switch between different fun filters
 - **Fullscreen Display**: Optimized for HDMI display on Raspberry Pi
 - **Keyboard Controls**: Easy filter switching and quit functionality
 - **Transparent Overlays**: PNG filters with alpha blending
+- **Automatic Model Download**: Required models are downloaded on first run
 
 ## Hardware Requirements
 
-- Raspberry Pi 4 (or compatible)
+- Raspberry Pi 4/5 (tested on ARM64/aarch64)
 - Camera: Raspberry Pi Camera Module **OR** USB webcam
 - Display: External monitor connected via HDMI
-- Raspberry Pi OS with Python 3
+- Raspberry Pi OS / Debian GNU/Linux 13+ with Python 3.11+
 
 ## Installation
 
-### 1. Update System Packages
+### Quick Start (Raspberry Pi ARM64)
 
 ```bash
-sudo apt update
-sudo apt upgrade -y
+# 1. Update system
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install system dependencies
+sudo apt install -y python3-pip python3-opencv python3-numpy
+
+# 3. Install Python dependencies  
+pip3 install --user opencv-contrib-python numpy requests
+
+# 4. Run the application
+python3 main.py --windowed  # Test in windowed mode first
 ```
 
-### 2. Install System Dependencies
+### Alternative: Using Virtual Environment
 
 ```bash
-sudo apt install -y python3-pip python3-opencv libatlas-base-dev libhdf5-dev libhdf5-serial-dev libatlas-base-dev libjasper-dev libqtgui4 libqt4-test python3-pyqt5
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run
+python3 main.py
 ```
 
-**Note**: If you're using the Raspberry Pi Camera Module, make sure it's enabled:
+### Camera Setup
+
+**Raspberry Pi Camera Module:**
 ```bash
+# Enable camera in raspi-config
 sudo raspi-config
 # Navigate to: Interface Options > Camera > Enable
-# Reboot after enabling
+sudo reboot
 ```
 
-### 3. Install Python Dependencies
+**USB Webcam:** Works out of the box, usually at index 0.
 
-```bash
-pip3 install -r requirements.txt
-```
+### Add Filter Images
 
-**Note**: On Raspberry Pi, you may need to use `pip3 install --user` if you encounter permission issues.
-
-### 4. Add Filter Images
-
-Place your filter PNG images in the `assets/filters/` directory:
-
+Place your filter PNG images in `assets/filters/`:
 - `mustache.png`
 - `glasses.png`
 - `cat_ears.png`
 - `unicorn.png`
 - `clown_nose.png`
 
-See `assets/filters/README.md` for more details about filter image requirements.
+See `assets/filters/README.md` for image requirements.
 
 ## Usage
 
-### Basic Usage
-
-Run the application with default settings (camera index 0, fullscreen):
-
 ```bash
+# Default: fullscreen mode
 python3 main.py
-```
 
-### Command Line Options
-
-```bash
-# Use a different camera (e.g., USB webcam at index 1)
+# Different camera
 python3 main.py --camera-index 1
 
-# Run in windowed mode (for testing on desktop)
+# Windowed mode (for testing)
 python3 main.py --windowed
-
-# Combine options
-python3 main.py --camera-index 0 --windowed
 ```
 
 ### Controls
 
-- **SPACE** - Switch to next filter
-- **B** - Switch to previous filter
-- **Q** or **ESC** - Quit application
+| Key | Action |
+|-----|--------|
+| SPACE | Next filter |
+| B | Previous filter |
+| Q / ESC | Quit |
 
-## Camera Setup
+## Model Downloads
 
-### Raspberry Pi Camera Module
+On first run, the application automatically downloads required models (~65MB total):
+- `deploy.prototxt` - Face detector architecture
+- `res10_300x300_ssd_iter_140000.caffemodel` - Face detector weights (~10MB)
+- `lbfmodel.yaml` - Facial landmark model (~54MB)
 
-1. Enable the camera in `raspi-config`:
-   ```bash
-   sudo raspi-config
-   ```
-   Navigate to: Interface Options > Camera > Enable
-
-2. Reboot:
-   ```bash
-   sudo reboot
-   ```
-
-3. Test the camera:
-   ```bash
-   libcamera-hello --list-cameras
-   ```
-
-**Note**: If using the Raspberry Pi Camera Module, you may need to use `libcamera-vid` or configure OpenCV to use it. For USB webcams, use `--camera-index 0` (or higher if multiple cameras).
-
-### USB Webcam
-
-Most USB webcams work out of the box. If you have multiple cameras, try different indices:
-
-```bash
-python3 main.py --camera-index 0  # First camera
-python3 main.py --camera-index 1  # Second camera
-```
+Models are saved to `models/` directory.
 
 ## Troubleshooting
 
 ### Camera Not Found
+```bash
+# List available cameras
+ls /dev/video*
 
-- Check camera connection
-- Try different camera indices: `--camera-index 0`, `--camera-index 1`
-- For Raspberry Pi Camera: Ensure it's enabled in `raspi-config`
-- Check if camera is in use by another application
+# Try different indices
+python3 main.py --camera-index 0
+python3 main.py --camera-index 1
+```
 
-### No Filters Displayed
+### OpenCV Import Error on ARM64
+```bash
+# Use system OpenCV instead of pip version
+sudo apt install python3-opencv
+pip3 uninstall opencv-python opencv-contrib-python
+```
 
-- Ensure PNG files are in `assets/filters/` directory
-- Check that filter images have proper transparency (alpha channel)
-- Verify file names match exactly: `mustache.png`, `glasses.png`, etc.
+### Model Download Fails
+```bash
+# Download manually
+mkdir -p models
+cd models
+wget https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt
+wget https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel
+wget https://raw.githubusercontent.com/kurnianggoro/GSOC2017/master/data/lbfmodel.yaml
+```
 
-### Performance Issues
-
-- Reduce camera resolution in `main.py` (currently set to 640x480)
-- Close other applications to free up resources
-- Ensure adequate power supply for Raspberry Pi 4
-
-### Fullscreen Issues
-
-- Use `--windowed` flag for testing
-- Check HDMI connection and display settings
-- Try adjusting display resolution in Raspberry Pi settings
+### Performance Tips
+- Use 640x480 resolution (default)
+- Close other applications
+- Use adequate power supply
 
 ## Project Structure
 
 ```
 Navesnak/
-├── main.py                 # Main application entry point
-├── filters.py              # Filter configuration and overlay logic
-├── requirements.txt        # Python dependencies
-├── README.md              # This file
+├── main.py             # Main application
+├── face_detector.py    # OpenCV DNN face detection
+├── filters.py          # Filter overlay logic
+├── requirements.txt    # Python dependencies
+├── README.md           # This file
+├── models/             # Downloaded DNN models
+│   ├── deploy.prototxt
+│   ├── res10_300x300_ssd_iter_140000.caffemodel
+│   └── lbfmodel.yaml
 └── assets/
-    └── filters/
-        ├── README.md      # Filter image instructions
-        ├── mustache.png   # (add your images here)
-        ├── glasses.png
-        ├── cat_ears.png
-        ├── unicorn.png
-        └── clown_nose.png
+    └── filters/        # PNG filter images
 ```
 
 ## Technical Details
 
-- **Face Detection**: MediaPipe Face Mesh for accurate landmark detection
-- **Image Processing**: OpenCV for video capture and image manipulation
-- **Filter Overlay**: Alpha blending with automatic scaling and positioning
-- **Performance**: Optimized for Raspberry Pi 4 with 640x480 resolution
+- **Face Detection**: OpenCV DNN SSD ResNet (Caffe model)
+- **Landmarks**: OpenCV FacemarkLBF (68-point model)
+- **Platform**: ARM64/aarch64 compatible (Raspberry Pi 4/5)
+- **Python**: 3.11+ (tested with 3.13.5)
 
 ## License
 
 This project is provided as-is for educational and entertainment purposes.
-
-## Credits
-
-Built with:
-- OpenCV (computer vision)
-- MediaPipe (face detection and landmarks)
-- Python 3
-
