@@ -151,7 +151,7 @@ class FilterManager:
                 "name": "Unicorn Horn",
                 "image": "unicorn.png",
                 "anchor": "forehead",
-                "scale_factor": 0.7,
+                "scale_factor": 1.4,
                 "offset_y": -60,  # Above forehead
             },
         ]
