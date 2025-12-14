@@ -39,33 +39,68 @@ class MagicMirrorApp:
         self.face_mesh = FaceMeshReplacement(min_detection_confidence=0.5)
 
     def initialize_camera(self) -> bool:
-        """Initialize the camera capture."""
-        try:
-            print(f"Initializing camera (index {self.camera_index})...")
-            self.cap = cv2.VideoCapture(self.camera_index)
+        """Initialize the camera capture with multiple backend attempts."""
+        backends_to_try = [
+            # Try V4L2 backend first (works better on Raspberry Pi)
+            (cv2.CAP_V4L2, "V4L2"),
+            # Try default backend
+            (cv2.CAP_ANY, "default"),
+        ]
 
-            if not self.cap.isOpened():
-                print(f"Error: Could not open camera {self.camera_index}")
-                print(
-                    "Make sure the camera is connected and not in use by another application."
-                )
-                return False
+        # For Raspberry Pi Camera Module, try libcamera pipeline
+        libcamera_pipelines = [
+            "libcamerasrc ! video/x-raw,width=640,height=480,framerate=30/1 ! videoconvert ! appsink",
+            f"v4l2src device=/dev/video{self.camera_index} ! video/x-raw,width=640,height=480 ! videoconvert ! appsink",
+        ]
 
-            # Set camera properties for better performance
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-            self.cap.set(cv2.CAP_PROP_FPS, 30)
+        print(f"Initializing camera (index {self.camera_index})...")
 
-            # Get actual resolution
-            width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fps = int(self.cap.get(cv2.CAP_PROP_FPS))
-            print(f"Camera initialized: {width}x{height} @ {fps} FPS")
+        # First try standard backends with V4L2
+        for backend, name in backends_to_try:
+            print(f"  Trying {name} backend...")
+            self.cap = cv2.VideoCapture(self.camera_index, backend)
 
-            return True
-        except Exception as e:
-            print(f"Error initializing camera: {e}")
-            return False
+            if self.cap.isOpened():
+                # Set camera properties
+                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                self.cap.set(cv2.CAP_PROP_FPS, 30)
+
+                # Test if we can actually read a frame
+                ret, frame = self.cap.read()
+                if ret and frame is not None and frame.size > 0:
+                    width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+                    print(
+                        f"  Success! Camera initialized: {width}x{height} @ {fps} FPS ({name})"
+                    )
+                    return True
+                else:
+                    self.cap.release()
+                    print(f"  {name} backend opened but couldn't read frames")
+
+        # Try libcamera/GStreamer pipelines for Raspberry Pi Camera Module
+        print("  Trying libcamera/GStreamer pipelines...")
+        for pipeline in libcamera_pipelines:
+            try:
+                self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+                if self.cap.isOpened():
+                    ret, frame = self.cap.read()
+                    if ret and frame is not None and frame.size > 0:
+                        print("  Success with GStreamer pipeline!")
+                        return True
+                    self.cap.release()
+            except Exception as e:
+                print(f"  Pipeline failed: {e}")
+
+        print("Error: Could not open camera with any backend")
+        print("Troubleshooting tips:")
+        print("  1. Check if camera is connected: ls /dev/video*")
+        print("  2. For Pi Camera, enable it: sudo raspi-config")
+        print("  3. Try: libcamera-hello --list-cameras")
+        print("  4. Kill other camera processes: sudo fuser -k /dev/video0")
+        return False
 
     def initialize_filters(self) -> bool:
         """Initialize the filter manager."""
