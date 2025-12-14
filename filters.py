@@ -147,6 +147,13 @@ class FilterManager:
                 "scale_factor": 0.25,
                 "offset_y": 0,  # On nose tip
             },
+            {
+                "name": "Unicorn Horn",
+                "image": "unicorn.png",
+                "anchor": "forehead",
+                "scale_factor": 0.4,
+                "offset_y": -60,  # Above forehead
+            },
         ]
 
         for fdef in filter_defs:
