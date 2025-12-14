@@ -68,8 +68,8 @@ class FilterConfig:
             # Convert to grayscale for threshold detection
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-            # Find white/very light pixels (threshold 240-255)
-            white_mask = gray > 240
+            # Find white/very light pixels (threshold 220-255)
+            white_mask = gray > 220
 
             # Also check if they're actually white (not just bright colors)
             # Check if R, G, B are all similar (grayscale-ish) and high
@@ -81,7 +81,7 @@ class FilterConfig:
                 ),
                 np.abs(r.astype(int) - b.astype(int)),
             )
-            is_grayish = color_diff < 30  # Tolerance for color similarity
+            is_grayish = color_diff < 50  # Higher tolerance for color similarity
 
             # Combine: white AND grayish = background
             background_mask = white_mask & is_grayish
@@ -152,7 +152,7 @@ class FilterManager:
                 "image": "unicorn.png",
                 "anchor": "forehead",
                 "scale_factor": 1.4,
-                "offset_y": -120,  # Above forehead
+                "offset_y": -40,  # Centered on forehead
             },
         ]
 
