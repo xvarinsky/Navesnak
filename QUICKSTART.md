@@ -1,87 +1,97 @@
-# Magic Mirror Face Filter - Quick Start Guide
+# Magic Mirror Face Filter - Rýchla Príručka
 
-## Project Description
-
-**Magic Mirror Face Filter** is an interactive Raspberry Pi application that:
-- Captures live video from a camera (Raspberry Pi Camera or USB webcam)
-- Displays a horizontally-mirrored video feed (like a real mirror)
-- Detects faces using MediaPipe Face Mesh
-- Overlays fun PNG filters (mustache, glasses, cat ears, unicorn horn, clown nose)
-- Allows switching between filters using keyboard controls
-- Runs fullscreen on HDMI display (or windowed for testing)
-
-## Installation Commands (Raspberry Pi OS)
-
-Run these commands in order:
+## 🚀 Rýchly Štart
 
 ```bash
-# 1. Update system packages
+# Na Raspberry Pi ARM64 (Debian 13+)
 sudo apt update
-sudo apt upgrade -y
+sudo apt install -y python3-opencv python3-numpy
+pip3 install --user -r requirements.txt
 
-# 2. Install system dependencies
-sudo apt install -y python3-pip python3-opencv libatlas-base-dev libhdf5-dev libhdf5-serial-dev libatlas-base-dev libjasper-dev libqtgui4 libqt4-test python3-pyqt5
-
-# 3. Enable Raspberry Pi Camera (if using Pi Camera Module)
-sudo raspi-config
-# Navigate to: Interface Options > Camera > Enable
-# Reboot after enabling: sudo reboot
-
-# 4. Install Python dependencies
-pip3 install -r requirements.txt
-# Or if permission issues: pip3 install --user -r requirements.txt
-```
-
-## Requirements.txt
-
-```
-opencv-python>=4.8.0
-mediapipe>=0.10.0
-numpy>=1.24.0
-```
-
-## How to Run
-
-### Basic Usage (Fullscreen)
-```bash
-python3 main.py
-```
-
-### Use Different Camera
-```bash
-python3 main.py --camera-index 1
-```
-
-### Windowed Mode (for testing)
-```bash
+# Spustenie
 python3 main.py --windowed
 ```
 
-### Controls
-- **SPACE** - Next filter
-- **B** - Previous filter  
-- **Q** or **ESC** - Quit
+## 🎮 Ovládanie
 
-## Before Running
+| Klávesa | Akcia |
+|---------|-------|
+| **SPACE** | Ďalší filter |
+| **B** | Predchádzajúci filter |
+| **Q** / **ESC** | Ukončiť |
 
-1. **Add Filter Images**: Place PNG files in `assets/filters/`:
-   - `mustache.png`
-   - `glasses.png`
-   - `cat_ears.png`
-   - `unicorn.png`
-   - `clown_nose.png`
+## 📁 Štruktúra Projektu
 
-2. **Connect Camera**: Ensure camera is connected and working
+```
+Navesnak/
+├── main.py           # Hlavná aplikácia
+├── face_detector.py  # OpenCV DNN detekcia tváre
+├── filters.py        # Konfigurácia a overlay filtrov
+├── requirements.txt  # Python závislosti
+├── models/           # DNN modely (stiahnu sa automaticky)
+└── assets/filters/   # PNG obrázky filtrov
+```
 
-3. **Connect Display**: HDMI monitor should be connected for fullscreen mode
+## 🔧 Ako to Funguje
 
-## Files Created
+### 1. Inicializácia
+- `main.py` → `MagicMirrorApp.__init__()` inicializuje kameru a face detector
 
-- `main.py` - Main application entry point
-- `filters.py` - Filter configuration and overlay logic
-- `requirements.txt` - Python dependencies
-- `README.md` - Full documentation
-- `assets/filters/` - Directory for filter PNG images
+### 2. Detekcia Tváre
+- `face_detector.py` → OpenCV DNN SSD model detekuje tvár
+- `FacemarkLBF` extrahuje 68 landmarkov (oči, nos, čelo, ústa)
 
-See `README.md` for detailed documentation and troubleshooting.
+### 3. Aplikácia Filtrov
+- `filters.py` → `FilterManager` načíta PNG obrázky
+- Automaticky odstráni biele pozadie
+- `overlay_filter()` aplikuje filter na anchor point (nos, oči, čelo)
 
+### 4. Hlavná Slučka
+```
+while True:
+    1. Načítať frame z kamery
+    2. Zrkadlovo prevrátiť (cv2.flip)
+    3. Detekovať tvár a landmarky
+    4. Aplikovať aktuálny filter
+    5. Zobraziť frame
+    6. Spracovať klávesnicu (SPACE/B/Q)
+```
+
+## 📦 Dostupné Filtre
+
+| Filter | Anchor Point | Popis |
+|--------|-------------|-------|
+| Mustache | `nose` | Fúzy pod nosom |
+| Glasses | `eyes_center` | Okuliare na očiach |
+| Clown Nose | `nose` | Červený klaunský nos |
+| Unicorn Horn | `forehead` | Rozprávkový roh na čele |
+
+## 🛠 Pridanie Nového Filtra
+
+1. Pridaj PNG obrázok do `assets/filters/`
+2. Uprav `filters.py`, pridaj do `filter_defs`:
+```python
+{
+    "name": "Moj Filter",
+    "image": "moj_filter.png",
+    "anchor": "forehead",  # nose, eyes_center, forehead, mouth
+    "scale_factor": 1.0,   # veľkosť relatívna k šírke tváre
+    "offset_y": -50,       # posun (záporné = hore)
+}
+```
+
+## 🐛 Problémy
+
+**Kamera nefunguje:**
+```bash
+ls /dev/video*
+python3 main.py --camera-index 1
+```
+
+**Modely sa nestiahli:**
+```bash
+mkdir -p models && cd models
+wget https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt
+wget https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel
+wget https://raw.githubusercontent.com/kurnianggoro/GSOC2017/master/data/lbfmodel.yaml
+```
