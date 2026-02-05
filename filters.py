@@ -124,35 +124,42 @@ class FilterManager:
         """Initialize all available filters."""
         import os
 
-        # Define filter configurations
+        # Define filter configurations - New creative filters
         filter_defs = [
             {
-                "name": "Mustache",
-                "image": "mustache.png",
-                "anchor": "nose",
-                "scale_factor": 0.5,
-                "offset_y": 25,  # Below nose
-            },
-            {
-                "name": "Glasses",
-                "image": "glasses.png",
-                "anchor": "eyes_center",
-                "scale_factor": 1.0,
-                "offset_y": 0,  # On eye level
-            },
-            {
-                "name": "Clown Nose",
-                "image": "clown_nose.png",
-                "anchor": "nose",
-                "scale_factor": 0.5,
-                "offset_y": 0,  # On nose tip
-            },
-            {
-                "name": "Unicorn Horn",
-                "image": "unicorn.png",
+                "name": "👑 Golden Crown",
+                "image": "crown.png",
                 "anchor": "forehead",
-                "scale_factor": 1.4,
-                "offset_y": -80,  # Bottom of horn at forehead center
+                "scale_factor": 1.2,
+                "offset_y": -60,  # Above forehead
+            },
+            {
+                "name": "🦋 Butterfly Wings",
+                "image": "butterfly_wings.png",
+                "anchor": "eyes_center",
+                "scale_factor": 2.0,
+                "offset_y": 0,  # Centered on face
+            },
+            {
+                "name": "🌟 Neon Mask",
+                "image": "neon_mask.png",
+                "anchor": "eyes_center",
+                "scale_factor": 1.1,
+                "offset_y": 0,  # Over eyes
+            },
+            {
+                "name": "🔥 Fire Eyes",
+                "image": "fire_eyes.png",
+                "anchor": "eyes_center",
+                "scale_factor": 1.3,
+                "offset_y": 0,  # Over eyes
+            },
+            {
+                "name": "😇 Angel Halo",
+                "image": "halo.png",
+                "anchor": "forehead",
+                "scale_factor": 1.0,
+                "offset_y": -70,  # Above head
             },
         ]
 
@@ -192,6 +199,25 @@ class FilterManager:
         """Switch to the previous filter."""
         if self.filters:
             self.current_index = (self.current_index - 1) % len(self.filters)
+
+    def select_filter(self, index: int) -> bool:
+        """
+        Select a filter by index.
+        
+        Args:
+            index: 0-based index of the filter to select
+            
+        Returns:
+            True if selection was successful, False otherwise
+        """
+        if self.filters and 0 <= index < len(self.filters):
+            self.current_index = index
+            return True
+        return False
+
+    def get_filter_count(self) -> int:
+        """Get the total number of available filters."""
+        return len(self.filters)
 
     def get_current_filter_name(self) -> str:
         """Get the name of the current filter."""
