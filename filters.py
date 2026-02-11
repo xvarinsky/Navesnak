@@ -43,12 +43,14 @@ class FilterConfig:
         self._image_alpha = None
 
     def load_image(self) -> bool:
-        """Load the filter image with alpha channel, removing white backgrounds."""
+        """Load the filter image with alpha channel, removing white backgrounds only when needed."""
         try:
             img = cv2.imread(self.image_path, cv2.IMREAD_UNCHANGED)
             if img is None:
                 print(f"Warning: Could not load filter image: {self.image_path}")
                 return False
+
+            has_real_alpha = False
 
             # Handle different image formats
             if len(img.shape) == 2:
@@ -56,41 +58,43 @@ class FilterConfig:
                 img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
                 alpha = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
             elif img.shape[2] == 4:
-                # Has alpha channel
+                # Has alpha channel - check if it's actually used
                 alpha = img[:, :, 3]
                 img = img[:, :, :3]
+                # Consider alpha "real" if there's meaningful variation
+                # (not all 255 / fully opaque)
+                if np.min(alpha) < 250:
+                    has_real_alpha = True
             else:
-                # No alpha channel - create one based on white background removal
+                # No alpha channel - create one
                 alpha = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
 
-            # Auto-remove white/near-white background (make it transparent)
-            # This helps with generated images that have white backgrounds
-            # Convert to grayscale for threshold detection
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # Only auto-remove white background if the image does NOT have a real alpha channel
+            if not has_real_alpha:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-            # Find white/very light pixels (threshold 220-255)
-            white_mask = gray > 220
+                # Find white/very light pixels (threshold 240-255)
+                white_mask = gray > 240
 
-            # Also check if they're actually white (not just bright colors)
-            # Check if R, G, B are all similar (grayscale-ish) and high
-            b, g, r = cv2.split(img)
-            color_diff = np.maximum(
-                np.maximum(
-                    np.abs(r.astype(int) - g.astype(int)),
-                    np.abs(g.astype(int) - b.astype(int)),
-                ),
-                np.abs(r.astype(int) - b.astype(int)),
-            )
-            is_grayish = color_diff < 50  # Higher tolerance for color similarity
+                # Check if R, G, B are all similar (grayscale-ish) and high
+                b, g, r = cv2.split(img)
+                color_diff = np.maximum(
+                    np.maximum(
+                        np.abs(r.astype(int) - g.astype(int)),
+                        np.abs(g.astype(int) - b.astype(int)),
+                    ),
+                    np.abs(r.astype(int) - b.astype(int)),
+                )
+                is_grayish = color_diff < 30
 
-            # Combine: white AND grayish = background
-            background_mask = white_mask & is_grayish
+                # Combine: white AND grayish = background
+                background_mask = white_mask & is_grayish
 
-            # Set alpha to 0 where background is detected
-            alpha[background_mask] = 0
+                # Set alpha to 0 where background is detected
+                alpha[background_mask] = 0
 
-            # Optional: smooth the alpha edges a bit
-            alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
+                # Smooth the alpha edges a bit
+                alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
 
             self._image = img
             self._image_alpha = alpha
@@ -130,36 +134,36 @@ class FilterManager:
                 "name": "👑 Golden Crown",
                 "image": "crown.png",
                 "anchor": "forehead",
-                "scale_factor": 1.2,
-                "offset_y": -60,  # Above forehead
+                "scale_factor": 0.9,
+                "offset_y": -30,  # Sits on top of head
             },
             {
                 "name": "🦋 Butterfly Wings",
                 "image": "butterfly_wings.png",
                 "anchor": "eyes_center",
-                "scale_factor": 2.0,
-                "offset_y": 0,  # Centered on face
+                "scale_factor": 1.5,
+                "offset_y": 20,  # Behind/around face, slightly below eyes
             },
             {
                 "name": "🌟 Neon Mask",
                 "image": "neon_mask.png",
                 "anchor": "eyes_center",
-                "scale_factor": 1.1,
+                "scale_factor": 1.0,
                 "offset_y": 0,  # Over eyes
             },
             {
                 "name": "🔥 Fire Eyes",
                 "image": "fire_eyes.png",
                 "anchor": "eyes_center",
-                "scale_factor": 1.3,
-                "offset_y": 0,  # Over eyes
+                "scale_factor": 0.9,
+                "offset_y": -5,  # Right on the eyes
             },
             {
                 "name": "😇 Angel Halo",
                 "image": "halo.png",
                 "anchor": "forehead",
-                "scale_factor": 1.0,
-                "offset_y": -70,  # Above head
+                "scale_factor": 0.7,
+                "offset_y": -40,  # Floating above head
             },
         ]
 
