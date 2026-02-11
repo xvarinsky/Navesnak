@@ -68,59 +68,35 @@ class FilterConfig:
                 alpha = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
 
             if not has_real_alpha:
-                # Detect and remove background (checkerboard or solid color)
-                # The images have a dark-gray checkerboard pattern (~53,53,53 and ~93,95,94)
-                # as fake transparency, or possibly white/light backgrounds.
+                # Remove checkerboard / neutral-gray background.
+                # These images are RGB PNGs with a baked-in checkerboard pattern
+                # where transparency should be. The checkerboard consists of two
+                # neutral gray tones (varying per image: black+gray, dark+medium, etc.)
+                # The actual filter content (crown, fire, wings) is always COLORFUL,
+                # so we can safely remove all neutral/desaturated pixels.
 
-                b, g, r = cv2.split(img)
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                # Convert to HSV - saturation is the key discriminator
+                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+                saturation = hsv[:, :, 1]  # 0 = gray, 255 = fully saturated color
 
-                # Check if R, G, B channels are very similar (neutral/gray pixel)
-                color_diff = np.maximum(
-                    np.maximum(
-                        np.abs(r.astype(int) - g.astype(int)),
-                        np.abs(g.astype(int) - b.astype(int)),
-                    ),
-                    np.abs(r.astype(int) - b.astype(int)),
-                )
-                is_neutral = color_diff < 15  # Very neutral/gray pixels
+                # Pixels with very low saturation are background (gray/checkerboard)
+                # Use a threshold: saturation < 30 means it's essentially gray
+                is_background = saturation < 30
 
-                # Detect dark-gray checkerboard background (two gray tones ~40-110)
-                is_dark_gray = (gray >= 40) & (gray <= 110) & is_neutral
+                # Also remove very white pixels (high value, low saturation)
+                value = hsv[:, :, 2]
+                is_white = (value > 235) & (saturation < 30)
+                is_background = is_background | is_white
 
-                # Detect white/light background
-                is_white = (gray > 235) & is_neutral
+                # Set alpha to 0 for background pixels
+                alpha[is_background] = 0
 
-                # Create binary mask: background-like pixels = 255
-                background_mask = (is_dark_gray | is_white).astype(np.uint8) * 255
+                # For semi-transparent edges: pixels with low saturation (30-60)
+                # get partial transparency for smooth blending
+                semi_mask = (saturation >= 30) & (saturation < 60)
+                alpha[semi_mask] = (saturation[semi_mask].astype(np.float32) / 60 * 255).astype(np.uint8)
 
-                # Use OpenCV floodFill from edges to find connected background
-                # This prevents removing gray pixels inside the actual image content
-                h, w = background_mask.shape
-
-                # Collect seed points along all edges
-                seed_points = set()
-                for x in range(0, w, 5):
-                    seed_points.add((x, 0))
-                    seed_points.add((x, h - 1))
-                for y in range(0, h, 5):
-                    seed_points.add((0, y))
-                    seed_points.add((w - 1, y))
-
-                # floodFill changes the source image; we mark filled pixels as 128
-                for sx, sy in seed_points:
-                    if background_mask[sy, sx] == 255:
-                        fill_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
-                        cv2.floodFill(background_mask, fill_mask, (sx, sy), 128,
-                                      loDiff=0, upDiff=0,
-                                      flags=4 | (128 << 8))
-
-                # Every pixel that was flood-filled is now 128
-                alpha[background_mask == 128] = 0
-
-                # Erode slightly to clean edges, then blur for smooth blending
-                kernel = np.ones((3, 3), dtype=np.uint8)
-                alpha = cv2.erode(alpha, kernel, iterations=1)
+                # Smooth alpha edges for cleaner blending
                 alpha = cv2.GaussianBlur(alpha, (5, 5), 0)
 
             self._image = img
@@ -161,29 +137,29 @@ class FilterManager:
                 "name": "👑 Golden Crown",
                 "image": "crown.png",
                 "anchor": "forehead",
-                "scale_factor": 0.9,
-                "offset_y": -30,  # Sits on top of head
+                "scale_factor": 0.8,
+                "offset_y": -55,  # Above the head
             },
             {
                 "name": "🦋 Butterfly Wings",
                 "image": "butterfly_wings.png",
                 "anchor": "eyes_center",
-                "scale_factor": 1.5,
-                "offset_y": 20,  # Behind/around face, slightly below eyes
+                "scale_factor": 1.4,
+                "offset_y": 10,  # Behind/around face
             },
             {
                 "name": "🔥 Fire Eyes",
                 "image": "fire_eyes.png",
                 "anchor": "eyes_center",
-                "scale_factor": 0.9,
-                "offset_y": -5,  # Right on the eyes
+                "scale_factor": 0.8,
+                "offset_y": 0,  # Right on the eyes
             },
             {
                 "name": "😇 Angel Halo",
                 "image": "halo.png",
                 "anchor": "forehead",
-                "scale_factor": 0.7,
-                "offset_y": -40,  # Floating above head
+                "scale_factor": 0.65,
+                "offset_y": -60,  # Floating above head
             },
         ]
 
