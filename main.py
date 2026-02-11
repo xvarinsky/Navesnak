@@ -8,7 +8,7 @@ and overlay filters (crown, butterfly wings, neon mask, fire eyes, halo).
 Controls:
     Mouse/Touch - Click left/right sides to navigate filters
     ← →        - Previous/Next filter  
-    1-5        - Select filter directly
+    1-4        - Select filter directly
     SPACE      - Next filter
     C          - Capture screenshot
     F          - Toggle fullscreen
@@ -159,7 +159,7 @@ class ModernUI:
     
     def draw_controls_hint(self, frame: np.ndarray, frame_width: int):
         """Draw minimal controls hint at top-left."""
-        hints = "1-5: Select | C: Capture | F: Fullscreen | Q: Quit"
+        hints = "1-4: Select | C: Capture | F: Fullscreen | Q: Quit"
         
         cv2.putText(frame, hints, (15, 25),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (150, 150, 150), 1)

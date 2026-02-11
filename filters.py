@@ -43,7 +43,7 @@ class FilterConfig:
         self._image_alpha = None
 
     def load_image(self) -> bool:
-        """Load the filter image with alpha channel, removing white backgrounds only when needed."""
+        """Load the filter image with alpha channel, detecting and removing background."""
         try:
             img = cv2.imread(self.image_path, cv2.IMREAD_UNCHANGED)
             if img is None:
@@ -61,23 +61,21 @@ class FilterConfig:
                 # Has alpha channel - check if it's actually used
                 alpha = img[:, :, 3]
                 img = img[:, :, :3]
-                # Consider alpha "real" if there's meaningful variation
-                # (not all 255 / fully opaque)
                 if np.min(alpha) < 250:
                     has_real_alpha = True
             else:
                 # No alpha channel - create one
                 alpha = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
 
-            # Only auto-remove white background if the image does NOT have a real alpha channel
             if not has_real_alpha:
+                # Detect and remove background (checkerboard or solid color)
+                # The images have a dark-gray checkerboard pattern (~53,53,53 and ~93,95,94)
+                # as fake transparency, or possibly white/light backgrounds.
+
+                b, g, r = cv2.split(img)
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-                # Find white/very light pixels (threshold 240-255)
-                white_mask = gray > 240
-
-                # Check if R, G, B are all similar (grayscale-ish) and high
-                b, g, r = cv2.split(img)
+                # Check if R, G, B channels are very similar (neutral/gray pixel)
                 color_diff = np.maximum(
                     np.maximum(
                         np.abs(r.astype(int) - g.astype(int)),
@@ -85,16 +83,45 @@ class FilterConfig:
                     ),
                     np.abs(r.astype(int) - b.astype(int)),
                 )
-                is_grayish = color_diff < 30
+                is_neutral = color_diff < 15  # Very neutral/gray pixels
 
-                # Combine: white AND grayish = background
-                background_mask = white_mask & is_grayish
+                # Detect dark-gray checkerboard background (two gray tones ~40-110)
+                is_dark_gray = (gray >= 40) & (gray <= 110) & is_neutral
 
-                # Set alpha to 0 where background is detected
-                alpha[background_mask] = 0
+                # Detect white/light background
+                is_white = (gray > 235) & is_neutral
 
-                # Smooth the alpha edges a bit
-                alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
+                # Create binary mask: background-like pixels = 255
+                background_mask = (is_dark_gray | is_white).astype(np.uint8) * 255
+
+                # Use OpenCV floodFill from edges to find connected background
+                # This prevents removing gray pixels inside the actual image content
+                h, w = background_mask.shape
+
+                # Collect seed points along all edges
+                seed_points = set()
+                for x in range(0, w, 5):
+                    seed_points.add((x, 0))
+                    seed_points.add((x, h - 1))
+                for y in range(0, h, 5):
+                    seed_points.add((0, y))
+                    seed_points.add((w - 1, y))
+
+                # floodFill changes the source image; we mark filled pixels as 128
+                for sx, sy in seed_points:
+                    if background_mask[sy, sx] == 255:
+                        fill_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
+                        cv2.floodFill(background_mask, fill_mask, (sx, sy), 128,
+                                      loDiff=0, upDiff=0,
+                                      flags=4 | (128 << 8))
+
+                # Every pixel that was flood-filled is now 128
+                alpha[background_mask == 128] = 0
+
+                # Erode slightly to clean edges, then blur for smooth blending
+                kernel = np.ones((3, 3), dtype=np.uint8)
+                alpha = cv2.erode(alpha, kernel, iterations=1)
+                alpha = cv2.GaussianBlur(alpha, (5, 5), 0)
 
             self._image = img
             self._image_alpha = alpha
@@ -143,13 +170,6 @@ class FilterManager:
                 "anchor": "eyes_center",
                 "scale_factor": 1.5,
                 "offset_y": 20,  # Behind/around face, slightly below eyes
-            },
-            {
-                "name": "🌟 Neon Mask",
-                "image": "neon_mask.png",
-                "anchor": "eyes_center",
-                "scale_factor": 1.0,
-                "offset_y": 0,  # Over eyes
             },
             {
                 "name": "🔥 Fire Eyes",
