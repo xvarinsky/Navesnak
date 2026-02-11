@@ -131,35 +131,39 @@ class FilterManager:
         """Initialize all available filters."""
         import os
 
-        # Define filter configurations - New creative filters
+        # Define filter configurations
+        # Images are 500x500 RGBA with proper alpha channels.
+        # target_width = face_width * scale_factor, target_height = same (1:1 aspect)
+        # Filter is centered on anchor point, then shifted by offset_x/offset_y.
+        # Anchor "forehead" is above the eyebrows; "eyes_center" is between the eyes.
         filter_defs = [
             {
                 "name": "👑 Golden Crown",
                 "image": "crown.png",
                 "anchor": "forehead",
-                "scale_factor": 0.8,
-                "offset_y": -55,  # Above the head
+                "scale_factor": 0.75,
+                "offset_y": -40,  # Crown sits on top of head, above forehead
             },
             {
                 "name": "🦋 Butterfly Wings",
-                "image": "butterfly_wings.png",
-                "anchor": "eyes_center",
-                "scale_factor": 1.4,
-                "offset_y": 10,  # Behind/around face
+                "image": "butterfly.png",
+                "anchor": "nose",
+                "scale_factor": 1.6,
+                "offset_y": -10,  # Wings spread around the face, centered on nose
             },
             {
                 "name": "🔥 Fire Eyes",
-                "image": "fire_eyes.png",
+                "image": "eyes.png",
                 "anchor": "eyes_center",
-                "scale_factor": 0.8,
-                "offset_y": 0,  # Right on the eyes
+                "scale_factor": 1.0,
+                "offset_y": 5,  # Directly over the eyes
             },
             {
                 "name": "😇 Angel Halo",
                 "image": "halo.png",
                 "anchor": "forehead",
-                "scale_factor": 0.65,
-                "offset_y": -60,  # Floating above head
+                "scale_factor": 0.75,
+                "offset_y": -35,  # Floating above the head
             },
         ]
 
