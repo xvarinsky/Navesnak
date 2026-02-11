@@ -142,15 +142,15 @@ class FilterManager:
                 "name": "👑 Golden Crown",
                 "image": "crown.png",
                 "anchor": "forehead",
-                "scale_factor": 0.85,
-                "offset_y": -80,  # Sitting on top of head
+                "scale_factor": 1.3,
+                "offset_y": -90,  # Sitting on top of head, bigger
             },
             {
                 "name": "🦋 Butterfly Wings",
                 "image": "butterfly.png",
-                "anchor": "eyes_center",
-                "scale_factor": 1.5,
-                "offset_y": 0,  # Centered on eyes, wings spread out
+                "anchor": "nose",
+                "scale_factor": 2.0,
+                "offset_y": 0,  # Lower, wider wings around nose/cheeks
             },
             {
                 "name": "🔥 Fire Eyes",
@@ -163,8 +163,8 @@ class FilterManager:
                 "name": "😇 Angel Halo",
                 "image": "halo.png",
                 "anchor": "forehead",
-                "scale_factor": 0.7,
-                "offset_y": -85,  # Floating above the head
+                "scale_factor": 1.0,
+                "offset_y": -90,  # Floating above the head, bigger
             },
         ]
 
