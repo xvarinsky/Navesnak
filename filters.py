@@ -133,23 +133,24 @@ class FilterManager:
 
         # Define filter configurations
         # Images are 500x500 RGBA with proper alpha channels.
-        # target_width = face_width * scale_factor, target_height = same (1:1 aspect)
+        # target_size = face_width * scale_factor (images are 1:1 aspect)
         # Filter is centered on anchor point, then shifted by offset_x/offset_y.
-        # Anchor "forehead" is above the eyebrows; "eyes_center" is between the eyes.
+        # Anchors: "forehead" ~above eyebrows, "eyes_center" between eyes, "nose" nose tip
+        # offset_y is in pixels: negative = up, positive = down
         filter_defs = [
             {
                 "name": "👑 Golden Crown",
                 "image": "crown.png",
                 "anchor": "forehead",
-                "scale_factor": 0.75,
-                "offset_y": -40,  # Crown sits on top of head, above forehead
+                "scale_factor": 0.85,
+                "offset_y": -70,  # Well above the head
             },
             {
                 "name": "🦋 Butterfly Wings",
                 "image": "butterfly.png",
                 "anchor": "nose",
-                "scale_factor": 1.6,
-                "offset_y": -10,  # Wings spread around the face, centered on nose
+                "scale_factor": 1.5,
+                "offset_y": -15,  # Wings spread around the face
             },
             {
                 "name": "🔥 Fire Eyes",
@@ -162,8 +163,8 @@ class FilterManager:
                 "name": "😇 Angel Halo",
                 "image": "halo.png",
                 "anchor": "forehead",
-                "scale_factor": 0.75,
-                "offset_y": -35,  # Floating above the head
+                "scale_factor": 0.7,
+                "offset_y": -65,  # Floating above the head
             },
         ]
 
@@ -364,12 +365,9 @@ def overlay_filter(
     filter_cropped = filter_resized[crop_y1:crop_y2, crop_x1:crop_x2]
     alpha_cropped = alpha_normalized[crop_y1:crop_y2, crop_x1:crop_x2]
 
-    # Blend filter with frame using alpha
+    # Blend filter with frame using alpha (vectorized - no Python loop)
     if len(roi.shape) == 3 and len(filter_cropped.shape) == 3:
-        for c in range(3):
-            roi[:, :, c] = (
-                alpha_cropped * filter_cropped[:, :, c]
-                + (1 - alpha_cropped) * roi[:, :, c]
-            )
+        alpha_3ch = alpha_cropped[:, :, np.newaxis]  # (H, W, 1)
+        roi[:] = (alpha_3ch * filter_cropped + (1.0 - alpha_3ch) * roi).astype(np.uint8)
 
     return frame

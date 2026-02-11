@@ -329,18 +329,22 @@ class FaceMeshReplacement:
         self.face_detector = FaceDetector(confidence_threshold=min_detection_confidence)
         self.landmark_detector = LandmarkDetector()
 
-    def process(self, frame_rgb: np.ndarray) -> "FaceResults":
+    def process(self, frame_rgb: np.ndarray, is_bgr: bool = False) -> "FaceResults":
         """
         Process a frame and detect faces with landmarks.
 
         Args:
-            frame_rgb: Input RGB frame
+            frame_rgb: Input frame (RGB by default, or BGR if is_bgr=True)
+            is_bgr: If True, frame is already in BGR format (skip conversion)
 
         Returns:
             FaceResults object with detected faces
         """
-        # Convert RGB to BGR for OpenCV
-        frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+        # Convert RGB to BGR for OpenCV (skip if already BGR)
+        if is_bgr:
+            frame_bgr = frame_rgb
+        else:
+            frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
 
         # Detect faces
         faces = self.face_detector.detect_faces(frame_bgr)

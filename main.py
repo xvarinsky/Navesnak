@@ -170,8 +170,7 @@ class ModernUI:
         """Draw a flash effect when screenshot is taken."""
         if self.screenshot_flash > 0:
             alpha = min(0.5, self.screenshot_flash)
-            white_overlay = np.full_like(frame, 255)
-            cv2.addWeighted(white_overlay, alpha, frame, 1 - alpha, 0, frame)
+            cv2.addWeighted(frame, 1 - alpha, frame, 0, 255 * alpha, frame)
             self.screenshot_flash -= 0.1
         
         return frame
@@ -205,6 +204,12 @@ class MagicMirrorApp:
 
         # Initialize OpenCV DNN Face Detection (ARM64 compatible)
         self.face_mesh = FaceMeshReplacement(min_detection_confidence=0.5)
+
+        # Frame skipping for performance - only run detection every N frames
+        self._frame_count = 0
+        self._detect_every_n = 3  # Run detection every 3rd frame
+        self._last_face_landmarks = None
+        self._last_face_detected = False
 
     def initialize_camera(self) -> bool:
         """Initialize the camera capture with multiple backend attempts."""
@@ -290,6 +295,8 @@ class MagicMirrorApp:
     def process_frame(self, frame: np.ndarray) -> tuple:
         """
         Process a single frame: detect face and apply filter.
+        Uses frame skipping to reduce CPU load — runs DNN detection
+        only every N frames and reuses the last result in between.
 
         Args:
             frame: Input frame (BGR)
@@ -300,22 +307,26 @@ class MagicMirrorApp:
         # Flip horizontally for mirror effect
         frame_mirrored = cv2.flip(frame, 1)
 
-        # Convert BGR to RGB for face detection
-        frame_rgb = cv2.cvtColor(frame_mirrored, cv2.COLOR_BGR2RGB)
+        self._frame_count += 1
 
-        # Detect faces using OpenCV DNN
-        results = self.face_mesh.process(frame_rgb)
+        # Only run expensive face detection every N frames
+        if self._frame_count % self._detect_every_n == 0:
+            # Pass BGR directly — no unnecessary color conversion
+            results = self.face_mesh.process(frame_mirrored, is_bgr=True)
+            self._last_face_detected = bool(results.multi_face_landmarks)
+            self._last_face_landmarks = (
+                results.multi_face_landmarks[0] if self._last_face_detected else None
+            )
 
         # Get current filter
         current_filter = (
             self.filter_manager.get_current_filter() if self.filter_manager else None
         )
 
-        face_detected = bool(results.multi_face_landmarks)
+        face_detected = self._last_face_detected
 
-        if results.multi_face_landmarks and current_filter:
-            # Process the first detected face
-            face_landmarks = results.multi_face_landmarks[0]
+        if self._last_face_landmarks and current_filter:
+            face_landmarks = self._last_face_landmarks
 
             # Get anchor points directly from the face landmarks
             anchor_points = face_landmarks.get_anchor_points()
