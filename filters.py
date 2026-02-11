@@ -143,14 +143,14 @@ class FilterManager:
                 "image": "crown.png",
                 "anchor": "forehead",
                 "scale_factor": 0.85,
-                "offset_y": -70,  # Well above the head
+                "offset_y": -80,  # Sitting on top of head
             },
             {
                 "name": "🦋 Butterfly Wings",
                 "image": "butterfly.png",
-                "anchor": "nose",
+                "anchor": "eyes_center",
                 "scale_factor": 1.5,
-                "offset_y": -15,  # Wings spread around the face
+                "offset_y": 0,  # Centered on eyes, wings spread out
             },
             {
                 "name": "🔥 Fire Eyes",
@@ -164,7 +164,7 @@ class FilterManager:
                 "image": "halo.png",
                 "anchor": "forehead",
                 "scale_factor": 0.7,
-                "offset_y": -65,  # Floating above the head
+                "offset_y": -85,  # Floating above the head
             },
         ]
 
