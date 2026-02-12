@@ -4,17 +4,16 @@ All filter PNG images in this directory.
 
 ## Available Filters
 
-1. **crown.png** - Golden Crown (positioned on forehead)
-2. **butterfly_wings.png** - Butterfly Wings (positioned over face)
-3. **neon_mask.png** - Neon Cyberpunk Mask (positioned over eyes)
-4. **fire_eyes.png** - Fire Eyes (positioned over eyes)
-5. **halo.png** - Angel Halo (positioned above head)
+1. **crown.png** - Golden Crown (positioned above head)
+2. **butterfly.png** - Butterfly Wings (positioned around face)
+3. **eyes.png** - Fire Eyes (positioned over eyes)
+4. **halo.png** - Angel Halo (positioned above head)
 
 ## Image Requirements
 
-- **Format**: PNG with transparency (alpha channel)
-- **Transparency**: Transparent background for best results
-- **Size**: Any size (automatically scaled to fit face)
+- **Format**: PNG with transparency (RGBA)
+- **Size**: 500x500 pixels recommended
+- **Transparency**: Proper alpha channel (not checkerboard background)
 
 ## Adding New Filters
 

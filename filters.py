@@ -139,28 +139,28 @@ class FilterManager:
         # offset_y is in pixels: negative = up, positive = down
         filter_defs = [
             {
-                "name": "👑 Golden Crown",
+                "name": "Golden Crown",
                 "image": "crown.png",
                 "anchor": "forehead",
                 "scale_factor": 1.3,
                 "offset_y": -90,  # Sitting on top of head, bigger
             },
             {
-                "name": "🦋 Butterfly Wings",
+                "name": "Butterfly Wings",
                 "image": "butterfly.png",
                 "anchor": "nose",
                 "scale_factor": 2.0,
                 "offset_y": 0,  # Lower, wider wings around nose/cheeks
             },
             {
-                "name": "🔥 Fire Eyes",
+                "name": "Fire Eyes",
                 "image": "eyes.png",
                 "anchor": "eyes_center",
                 "scale_factor": 1.0,
                 "offset_y": 5,  # Directly over the eyes
             },
             {
-                "name": "😇 Angel Halo",
+                "name": "Angel Halo",
                 "image": "halo.png",
                 "anchor": "forehead",
                 "scale_factor": 1.0,

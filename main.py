@@ -349,7 +349,7 @@ class MagicMirrorApp:
         
         try:
             cv2.imwrite(filepath, frame)
-            print(f"📸 Screenshot saved: {filepath}")
+            print(f"Screenshot saved: {filepath}")
             self.ui.trigger_screenshot_flash()
         except Exception as e:
             print(f"Error saving screenshot: {e}")

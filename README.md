@@ -1,6 +1,6 @@
 # Magic Mirror Face Filter
 
-A fun, interactive Raspberry Pi application that uses a camera to show a live mirrored video with face detection and overlay filters (mustache, glasses, cat ears, unicorn horn, clown nose).
+A fun, interactive Raspberry Pi application that uses a camera to show a live mirrored video with face detection and overlay filters (crown, butterfly wings, fire eyes, angel halo).
 
 ## Features
 
@@ -12,11 +12,12 @@ A fun, interactive Raspberry Pi application that uses a camera to show a live mi
 - **Keyboard Controls**: Easy filter switching and quit functionality
 - **Transparent Overlays**: PNG filters with alpha blending
 - **Automatic Model Download**: Required models are downloaded on first run
+- **Frame Skipping**: Efficient detection — runs only every 3rd frame to reduce CPU load
 
 ## Hardware Requirements
 
 - Raspberry Pi 4/5 (tested on ARM64/aarch64)
-- Camera: Raspberry Pi Camera Module **OR** USB webcam
+- Camera: Raspberry Pi Camera Module or USB webcam
 - Display: External monitor connected via HDMI
 - Raspberry Pi OS / Debian GNU/Linux 13+ with Python 3.11+
 
@@ -31,7 +32,7 @@ sudo apt update && sudo apt upgrade -y
 # 2. Install system dependencies
 sudo apt install -y python3-pip python3-opencv python3-numpy
 
-# 3. Install Python dependencies  
+# 3. Install Python dependencies
 pip3 install --user opencv-contrib-python numpy requests
 
 # 4. Run the application
@@ -66,12 +67,11 @@ sudo reboot
 
 ### Add Filter Images
 
-Place your filter PNG images in `assets/filters/`:
-- `mustache.png`
-- `glasses.png`
-- `cat_ears.png`
-- `unicorn.png`
-- `clown_nose.png`
+Place your filter PNG images (500x500 RGBA with transparency) in `assets/filters/`:
+- `crown.png`
+- `butterfly.png`
+- `eyes.png`
+- `halo.png`
 
 See `assets/filters/README.md` for image requirements.
 
@@ -94,7 +94,19 @@ python3 main.py --windowed
 |-----|--------|
 | SPACE | Next filter |
 | B | Previous filter |
+| 1-4 | Select filter directly |
+| C | Capture screenshot |
+| F | Toggle fullscreen |
 | Q / ESC | Quit |
+
+## Available Filters
+
+| Filter | Anchor Point | Description |
+|--------|-------------|-------------|
+| Golden Crown | forehead | Crown sitting on top of head |
+| Butterfly Wings | nose | Wings spread around the face |
+| Fire Eyes | eyes_center | Fire effect over the eyes |
+| Angel Halo | forehead | Halo floating above the head |
 
 ## Model Downloads
 
@@ -148,6 +160,7 @@ Navesnak/
 ├── filters.py          # Filter overlay logic
 ├── requirements.txt    # Python dependencies
 ├── README.md           # This file
+├── QUICKSTART.md       # Quick reference guide
 ├── models/             # Downloaded DNN models
 │   ├── deploy.prototxt
 │   ├── res10_300x300_ssd_iter_140000.caffemodel
@@ -162,6 +175,7 @@ Navesnak/
 - **Landmarks**: OpenCV FacemarkLBF (68-point model)
 - **Platform**: ARM64/aarch64 compatible (Raspberry Pi 4/5)
 - **Python**: 3.11+ (tested with 3.13.5)
+- **Performance**: Frame skipping (detection every 3rd frame), vectorized alpha blending
 
 ## License
 
